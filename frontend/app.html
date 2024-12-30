@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POWER GAURD</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f4f7f9;
+      background-image: linear-gradient(45deg, #92c9b3, #f7971e);
+      background-size: 200% 200%;
+      animation: gradientShift 10s infinite alternate;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 80%;
+      max-width: 800px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .bulb {
+      width: 1px;
+      height: 1px;
+      border-radius: 1%;
+      display: inline-block;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      transition: background 0.3s, transform 0.2s;
+      animation: pulse 2s infinite;
+    }
+
+    .live-stream-container {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .live-stream {
+      width: 200%;
+      height: 1200px;
+      border: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+
+    /* New styles for buttons */
+    .button-container {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+
+    .control-button {
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>POWER GAURD</h1>
+  <table>
+    <tr>
+      <th>Voltage</th>
+      <th>Current</th>
+      <th>Power</th>
+    </tr>
+    <tr id="dataRow">
+      <td>Loading...</td>
+      <td>Loading...</td>
+      <td>Loading...</td>
+    </tr>
+  </table>
+  <div>
+    <h2>Result</h2>
+    <span class="bulb" id="resultBulb"></span>
+  </div>
+
+  <!-- Button Container -->
+  <div class="button-container">
+    <button class="control-button" onclick="sendCommand('ON')">ON</button>
+    <button class="control-button" onclick="sendCommand('OFF')">OFF</button>
+  </div>
+
+  <script>
+    const channelId1 = '1013258';
+    const apiKey1 = 'W3KYUV68TXQ76IQ8';
+    const channelId2 = '1702450';
+    const apiKey2 = '0AXUWGSMKW3KDWX3';
+
+    const dataRow = document.getElementById('dataRow');
+    const resultBulb = document.getElementById('resultBulb');
+
+    // Fetch data from the first channel
+    fetch(`https://api.thingspeak.com/channels/${channelId1}/feeds.json?api_key=${apiKey1}`)
+      .then(response => response.json())
+      .then(data => {
+        const latestEntry = data.feeds[data.feeds.length - 1];
+        const Current = latestEntry.field1;
+        const Voltage = latestEntry.field2;
+        const Power = latestEntry.field3;
+
+        dataRow.innerHTML = `
+          <td>${Current}</td>
+          <td>${Voltage}</td>
+          <td>${Power}</td>
+        `;
+      })
+      .catch(error => {
+        console.error('Error fetching data from channel 1:', error);
+        dataRow.innerHTML = '<td colspan="3">Error loading data</td>';
+      });
+
+    // Fetch data from the second channel
+    fetch(`https://api.thingspeak.com/channels/${channelId2}/feeds.json?api_key=${apiKey2}`)
+      .then(response => response.json())
+      .then(data => {
+        const latestEntry = data.feeds[data.feeds.length - 1];
+        const result = latestEntry.field1; // Assuming the result is in field1
+
+        resultBulb.textContent = result; // Set the text content to the result value
+      })
+      .catch(error => {
+        console.error('Error fetching data from channel 2:', error);
+        resultBulb.innerHTML = 'Error loading result';
+      });
+
+    function sendCommand(command) {
+      const apiKeyControl = 'ZKD2A60PEXQ13T8U';
+      const fieldValue = (command === 'ON') ? '1' : '2';
+
+      fetch(`https://api.thingspeak.com/update?api_key=${apiKeyControl}&field1=${fieldValue}`, { method: 'POST' })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to send command');
+          }
+          console.log(`Command "${command}" sent successfully`);
+        })
+        .catch(error => console.error('Error sending command:', error));
+    }
+  </script>
+
+  <h1>Demand Prediction</h1>
+  <img src="img.png">
+</body>
+</html>

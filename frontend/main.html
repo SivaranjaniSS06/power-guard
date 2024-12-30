@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POWER GUARD</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url('ebimg.jpg') no-repeat center center fixed;
+      background-size: cover;
+      animation: backgroundAnimation 15s infinite alternate;
+    }
+
+    @keyframes backgroundAnimation {
+      0% {
+        background-size: 100% 100%;
+        filter: brightness(0.9);
+      }
+      50% {
+        background-size: 110% 110%;
+        filter: brightness(1.1);
+      }
+      100% {
+        background-size: 120% 120%;
+        filter: brightness(0.9);
+      }
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 80%;
+      max-width: 800px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      border: 1px solid blue;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .bulb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      transition: background 0.3s, transform 0.2s;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    .radio-container {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+
+    .radio-button {
+      margin: 0 10px;
+    }
+
+    .floating-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+    }
+
+    .floating-button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>POWER GUARD</h1>
+  <table>
+    <tr>
+      <th>Voltage</th>
+      <th>Current</th>
+      <th>Power</th>
+    </tr>
+    <tr id="dataRow">
+      <td id="voltage">0</td>
+      <td id="current">0</td>
+      <td id="power">0</td>
+    </tr>
+  </table>
+  <div>
+    <h2>Current Flow</h2>
+    <span class="bulb" id="resultBulb" style="background-color: gray;"></span>
+  </div>
+
+  <div class="radio-container">
+    <input type="radio" class="radio-button" name="powerControl" value="ON" onclick="sendCommand('ON')" checked><label>ON</label>
+    <input type="radio" class="radio-button" name="powerControl" value="OFF" onclick="sendCommand('OFF')"><label>OFF</label>
+  </div>
+
+  <button class="floating-button" onclick="doSomething()">+</button>
+
+  <h1>Demand Prediction</h1>
+  <img src="img.png">
+
+  <script>
+    function fetchData() {
+      const channelId1 = '1013258';
+      const apiKey1 = 'W3KYUV68TXQ76IQ8';
+      const channelId2 = '1702450';
+      const apiKey2 = '0AXUWGSMKW3KDWX3';
+
+      const voltageElement = document.getElementById('voltage');
+      const currentElement = document.getElementById('current');
+      const powerElement = document.getElementById('power');
+      const resultBulb = document.getElementById('resultBulb');
+
+      // Fetch data from the first channel
+      fetch(`https://api.thingspeak.com/channels/${channelId1}/feeds.json?api_key=${apiKey1}`)
+        .then(response => response.json())
+        .then(data => {
+          const latestEntry = data.feeds[data.feeds.length - 1];
+          const Current = latestEntry.field1 || 0;
+          const Voltage = latestEntry.field2 || 0;
+          const Power = latestEntry.field3 || 0;
+
+          currentElement.textContent = Current;
+          voltageElement.textContent = Voltage;
+          powerElement.textContent = Power;
+        })
+        .catch(error => {
+          console.error('Error fetching data from channel 1:', error);
+        });
+
+      // Fetch data from the second channel
+      fetch(`https://api.thingspeak.com/channels/${channelId2}/feeds.json?api_key=${apiKey2}`)
+        .then(response => response.json())
+        .then(data => {
+          const latestEntry = data.feeds[data.feeds.length - 1];
+          const result = latestEntry.field1;
+
+          if (result === "ON") {
+            resultBulb.style.backgroundColor = "green";
+          } else if (result === "OFF") {
+            resultBulb.style.backgroundColor = "red";
+          } else {
+            resultBulb.style.backgroundColor = "gray";
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching data from channel 2:', error);
+        });
+    }
+
+    setInterval(fetchData, 60000);
+    fetchData();
+
+    function sendCommand(command) {
+      const apiKeyControl = 'ZKD2A60PEXQ13T8U';
+      const fieldValue = (command === 'ON') ? '1' : '2';
+
+      fetch(`https://api.thingspeak.com/update?api_key=${apiKeyControl}&field1=${fieldValue}`, { method: 'POST' })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to send command');
+          }
+          console.log(`Command "${command}" sent successfully`);
+        })
+        .catch(error => console.error('Error sending command:', error));
+    }
+
+    function doSomething() {
+      console.log('Button clicked');
+    }
+  </script>
+</body>
+</html>

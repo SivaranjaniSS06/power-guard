@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration Page</title>
+  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js"></script>
+  <style>
+    body {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     min-height: 100vh;
+     margin: 0;
+     background-image: url('regimg.jpg'); /* Updated path */
+     background-color: #f4f7f9;
+     background-size: cover;
+     animation: gradientShift 10s infinite alternate;
+}
+
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+
+    .registration-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .registration-container h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+
+    .registration-container input {
+      width: 100%;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .registration-container button {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .registration-container button:hover {
+      background-color: #45a049;
+    }
+
+    #errorMessage {
+      color: red;
+      display: none;
+    }
+
+    .messageDiv {
+      background: hsla(327, 90%, 28%);
+      color: white;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 5px;
+      font-size: 1rem;
+      opacity: 0;
+      animation: fadeOut 7s forwards;
+    }
+
+    .login-link {
+      margin-top: 20px;
+      color: #4CAF50;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    .login-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="registration-container">
+    <h2>Register</h2>
+    <form id="registrationForm">
+      <div id="signUpMessage" class="messageDiv" style="display:none;"></div>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Sign Up</button>
+    </form>
+    <p id="errorMessage">Error registering user</p>
+    <a href="login.html" class="login-link">Do you have an account? Log in here.</a>
+  </div>
+
+  <script type="module">
+    // Your Firebase configuration object
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwOXuO6SeLYqNgeBSQTRyfJHSsVlGlFl4",
+      authDomain: "smart-eb.firebaseapp.com",
+      projectId: "smart-eb",
+      storageBucket: "smart-eb.appspot.com",
+      messagingSenderId: "707897095946",
+      appId: "1:707897095946:web:3331585147ab97572b6cf3",
+      measurementId: "G-4QZLEG9S13"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();  // Make sure to initialize auth after Firebase is initialized
+    const db = getFirestore(app);
+
+    function showMessage(message, divId) {
+      const messageDiv = document.getElementById(divId);
+      messageDiv.style.display = "block";
+      messageDiv.innerHTML = message;
+      messageDiv.style.opacity = 1;
+      setTimeout(function () {
+        messageDiv.style.opacity = 0;
+      }, 5000);
+    }
+
+    document.getElementById('registrationForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      // Simple validation
+      if (!email || !password) {
+        document.getElementById('errorMessage').textContent = 'Email and password are required';
+        document.getElementById('errorMessage').style.display = 'block';
+        return;
+      }
+
+      // Register new user
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          // Save additional user data in Firestore
+          return setDoc(doc(db, "users", user.uid), {
+            email: email
+          });
+        })
+        .then(() => {
+          showMessage('Account Created Successfully', 'signUpMessage');
+          // Redirect to login page
+          setTimeout(() => {
+            window.location.href = 'login.html';  // Replace with your login page URL
+          }, 2000); // Wait 2 seconds before redirecting
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          if (errorCode === 'auth/email-already-in-use') {
+            showMessage('Email Address Already Exists !!!', 'signUpMessage');
+          } else {
+            showMessage('Unable to create User', 'signUpMessage');
+          }
+        });
+    });
+  </script>
+
+</body>
+</html>
